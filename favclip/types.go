@@ -1,6 +1,10 @@
 package favclip
 
-import "time"
+import (
+	"fmt"
+	"net/url"
+	"time"
+)
 
 // ArticleGenreList represents article's genres
 type ArticleGenreList struct {
@@ -24,7 +28,7 @@ type ArticleGenre struct {
 
 // Article represents article
 type Article struct {
-	ID                    int64     `json:"id,omitempty,string"`
+	ID                    int64     `json:"id,string"`
 	CorePortalID          string    `json:"corePortalID"`
 	Title                 string    `json:"title"`
 	IntroBody             string    `json:"introBody,omitempty"`
@@ -43,4 +47,13 @@ type Article struct {
 	UpdatedAt             time.Time `json:"updatedAt,omitempty"`
 	CanonicalURL          string    `json:"canonicalURL,omitempty"`
 	MediaName             string    `json:"mediaName,omitempty"`
+}
+
+// ArticleURL returns permanent link URL
+func (art *Article) ArticleURL() string {
+	articleURL := &url.URL{}
+	articleURL.Scheme = "https"
+	articleURL.Host = fmt.Sprintf("%s.%s", art.CorePortalID, "favclip.com")
+	articleURL.Path = fmt.Sprintf("/article/detail/%d", art.ID)
+	return articleURL.String()
 }

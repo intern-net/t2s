@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/intern-net/t2s/favclip"
-	"github.com/intern-net/t2s/voicetext"
+	"github.com/intern-net/t2s/say"
 )
 
 var (
@@ -15,6 +17,13 @@ var (
 	speaker string
 	out     string
 )
+
+// Voice represents voice meta
+type Voice struct {
+	ID      int64  `json:"id"`
+	Title   string `json:"title"`
+	LinkURL string `json:"linkURL"`
+}
 
 func init() {
 	flag.StringVar(&apiKey, "apikey", "", "apiKey for VoiceText API")
@@ -45,15 +54,34 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		// make directory
+		dirname := fmt.Sprintf("says/%s", genre.ID)
+		err = os.MkdirAll(dirname, 0777)
+		if err != nil {
+			panic(err)
+		}
 		for _, art := range genre.Articles {
 			if art.PlainText == "" {
 				continue
 			}
-			dst, err := os.Create(fmt.Sprintf("voices/%d.wav", art.ID))
+			// create voice file
+			voicefile := fmt.Sprintf("%s/%d.mp4", dirname, art.ID)
+			err := say.Text2Speech(voicefile, art.PlainText, speaker)
 			if err != nil {
 				panic(err)
 			}
-			err = voicetext.Text2Speech(dst, apiKey, art.PlainText, speaker)
+			// create meta json
+			metafile := fmt.Sprintf("%s/%d.json", dirname, art.ID)
+			v := &Voice{
+				ID:      art.ID,
+				Title:   art.Title,
+				LinkURL: art.ArticleURL(),
+			}
+			b, err := json.MarshalIndent(v, "", "  ")
+			if err != nil {
+				panic(err)
+			}
+			err = ioutil.WriteFile(metafile, b, os.ModePerm)
 			if err != nil {
 				panic(err)
 			}
